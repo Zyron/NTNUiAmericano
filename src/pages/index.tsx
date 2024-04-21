@@ -157,10 +157,10 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
             <p className="flex justify-center text-4xl text-black">Americano</p>
 
             <div className="mt-5 flex justify-center">
-                <p className="font-bold text-black">Spillere: </p>
+                <p className="font-bold text-black">Spillere: &nbsp;</p>
                 {data.map((item) => (
                     <div key={`${item.fornavn}-${item.etternavn}`}>
-                        {item.fornavn} {item.etternavn[0]}.
+                        {item.fornavn} {item.etternavn[0]}. &nbsp;
                     </div>
                 ))}
             </div>
