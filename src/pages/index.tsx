@@ -189,7 +189,11 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                     <div key={matchIndex}>{match[0]}</div>
                                 ))}
                             </div>
+                            <div className="font-bold text-xl">
+                                {scores[0]}{/* Score 1 */}
+                            </div>
                             {round.length > 1 && <div>vs</div>}
+                            <div className="font-bold text-xl">{scores[1]}</div> {/* Score 2 i fet tekst */}
                             <div className="flex flex-col">
                                 {round.slice(1).map((match, matchIndex) => (
                                     <div key={matchIndex}>{match[1]}</div>
