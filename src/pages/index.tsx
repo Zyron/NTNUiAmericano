@@ -1,4 +1,3 @@
-// pages/index.tsx
 import { GetServerSideProps, GetServerSidePropsResult } from "next";
 import Container from "@/components/Container";
 import Link from "next/link";
@@ -51,8 +50,6 @@ function generateRounds(data: any[]): any[][][] {
         (item) => item.fornavn + " " + item.etternavn[0] + "."
     );
 
-    console.log(players);
-
     let rounds: any[][][] = [];
 
     if (numPlayers === 4) {
@@ -78,8 +75,6 @@ function generateRounds(data: any[]): any[][][] {
             rounds.push(round);
         }
     }
-
-    console.log(rounds);
 
     return rounds;
 }
@@ -115,7 +110,7 @@ const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from
 export const getServerSideProps: GetServerSideProps<
     HomeProps
 > = async (): Promise<GetServerSidePropsResult<HomeProps>> => {
-    const numberToSend = 107; // 76; // Replace with the desired number
+    const numberToSend = 107; // Replace with the desired number
     const { data, error } = await sendData(numberToSend);
 
     return {
@@ -128,7 +123,7 @@ export const getServerSideProps: GetServerSideProps<
 
 const Home: React.FC<HomeProps> = ({ data, error }) => {
     const [currentRound, setCurrentRound] = useState(0); // State for current round
-    const [scores, setScores] = useState<[number, number]>([0, 0]); // State for the scores
+    const [scores, setScores] = useState<{ [key: number]: [number, number] }>({}); // Dictionary for storing scores for each round
 
     const goToNextRound = () => {
         setCurrentRound((prevRound) => prevRound + 1);
@@ -138,7 +133,10 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     };
 
     const updateScores = (score: number) => {
-        setScores([score, 16 - score]); // Update the scores state
+        setScores((prevScores) => ({
+            ...prevScores,
+            [currentRound]: [score, 16 - score], // Update the scores for the current round
+        }));
     };
 
     if (error) {
@@ -151,6 +149,34 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
 
     const rounds = formatMatchups(generateRounds(data));
     const round = rounds[currentRound]; // Get current round
+
+    // Calculate total points for each player
+    const calculatePlayerScores = () => {
+        const playerScores: { [key: string]: number } = {};
+
+        data.map((item) => (playerScores[`${item.fornavn}-${item.etternavn}`]=0));
+
+        console.log(playerScores);
+
+        // Iterate over each round and accumulate scores
+        rounds.forEach((round, roundIndex) => {
+            if (scores[roundIndex]) {
+                const [score1, score2] = scores[roundIndex];
+                round.slice(1).forEach((match, matchIndex) => {
+                    if (match[0]) {
+                        playerScores[match[0]] = (playerScores[match[0]] || 0) + (matchIndex === 0 ? score1 : score2);
+                    }
+                    if (match[1]) {
+                        playerScores[match[1]] = (playerScores[match[1]] || 0) + (matchIndex === 0 ? score2 : score1);
+                    }
+                });
+            }
+        });
+
+        return playerScores;
+    };
+
+    const playerScores = calculatePlayerScores();
 
     return (
         <Container>
@@ -169,7 +195,24 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             {currentRound > 0 && (
-                                <button onClick={goToPrevRound}>{"<"}</button>
+                                <button
+                                    className="rounded-md w-12 border m-2 px-4 py-2 bg-blue-400"
+                                    onClick={goToPrevRound}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        fill="white"
+                                        className="bi bi-arrow-left"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"
+                                        />
+                                    </svg>
+                                </button>
                             )}
                         </div>
                         <div className="text-slate-700 font-bold mb-2">
@@ -177,7 +220,24 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                         </div>
                         <div>
                             {currentRound < rounds.length - 1 && (
-                                <button onClick={goToNextRound}>{">"}</button>
+                                <button
+                                    className="rounded-md w-12 border m-2 px-4 py-2 bg-blue-400"
+                                    onClick={goToNextRound}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        fill="white"
+                                        className="bi bi-arrow-right"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"
+                                        />
+                                    </svg>
+                                </button>
                             )}
                         </div>
                     </div>
@@ -190,10 +250,12 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                 ))}
                             </div>
                             <div className="font-bold text-xl">
-                                {scores[0]}{/* Score 1 */}
+                                {scores[currentRound] ? scores[currentRound][0] : 0} {/* Correct way to access Score 1 for the current round */}
                             </div>
                             {round.length > 1 && <div>vs</div>}
-                            <div className="font-bold text-xl">{scores[1]}</div> {/* Score 2 i fet tekst */}
+                            <div className="font-bold text-xl">
+                                {scores[currentRound] ? scores[currentRound][1] : 0} {/* Correct way to access Score 2 for the current round */}
+                            </div>
                             <div className="flex flex-col">
                                 {round.slice(1).map((match, matchIndex) => (
                                     <div key={matchIndex}>{match[1]}</div>
@@ -204,20 +266,15 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                 </div>
             </div>
             <div className="flex flex-wrap justify-center">
-            {buttons.map((button) => (
-                <button
-                    key={button}
-                    className="rounded-md w-12 border m-2 px-4 py-2 bg-gray-100"
-                    onClick={() => updateScores(button)} // Add an onClick handler here
-                >
-                    {button}
-                </button>
-            ))}
-            </div>
-
-            <div className="mt-4">
-            <p>Score 1: {scores[0]}</p> {/* Display the scores here */}
-            <p>Score 2: {scores[1]}</p>
+                {buttons.map((button) => (
+                    <button
+                        key={button}
+                        className="rounded-md w-12 border m-2 px-4 py-2 bg-gray-100"
+                        onClick={() => updateScores(button)} // Add an onClick handler here
+                    >
+                        {button}
+                    </button>
+                ))}
             </div>
         </Container>
     );
