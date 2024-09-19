@@ -43,11 +43,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const results = await new Promise<any[]>((resolve, reject) => {
       connection.query('SELECT b.medlemsid, b.fornavn, b.etternavn, b.mobil FROM vikarer a, medlemmer b WHERE a.medlemsid = b.medlemsid AND a.timeid= ? ORDER BY a.bekreftelsestidspunkt', [timeid], (error, results, fields) => {
         if (error) {
-          console.log("test1");
           console.log(error);
           resolve(dummy); // resolve with dummy data on error
         } else {
-          console.log("test2");
           console.log(results);
           resolve(results);
         }

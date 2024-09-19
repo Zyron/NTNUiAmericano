@@ -109,7 +109,7 @@ const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async (context): Promise<GetServerSidePropsResult<HomeProps>> => {
     // Log the full query object to debug
-    console.log("Query parameters:", context.query);
+    // console.log("Query parameters:", context.query);
 
     // Retrieve the 'timeid' query parameter from the context
     const { timeid } = context.query;
@@ -118,13 +118,13 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
     const timeidToSend = timeid ? parseInt(timeid as string, 10) : 165;
 
     // Log the timeid to be sent to the API for debugging
-    console.log("timeid to send:", timeidToSend);
+    // console.log("timeid to send:", timeidToSend);
 
     // Send the timeid in the request
     const { data, error } = await sendData(timeidToSend);
 
     // Log the API response data and any error for debugging
-    console.log("API Response:", data, error);
+    // console.log("API Response:", data, error);
 
     return {
         props: {
@@ -167,7 +167,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     const calculatePlayerScores = () => {
         const playerScores: { [key: string]: number } = {};
 
-        data.map((item) => (playerScores[`${item.fornavn}-${item.etternavn}`]=0));
+        data.map((item) => (playerScores[`${item.fornavn} ${item.etternavn}`]=0));
 
         console.log(playerScores);
 
@@ -193,31 +193,42 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
 
     return (
         <Container>
+            {/* Title */}
             <p className="flex justify-center text-4xl text-black">Americano</p>
+            
+            {/* Subtitle: 16 poeng, 4 serve hver spiller */}
+            <p className="flex justify-center text-lg text-gray-600 mt-2">(16 poeng, 4 serve hver spiller)</p>
 
+            {/* Player List */}
             <div className="mt-5 flex justify-center">
-                <p className="font-bold text-black">Spillere: &nbsp;</p>
-                {data.map((item) => (
-                    <div key={`${item.fornavn}-${item.etternavn}`}>
-                        {item.fornavn} {item.etternavn[0]}. &nbsp;
-                    </div>
-                ))}
+                {/* Displaying players with numbers */}
+                <div className="text-black">
+                    {data.map((item, index) => (
+                        <div key={`${item.fornavn}-${item.etternavn}`} className="mb-1">
+                            <span className="font-bold">{index + 1}: </span>
+                            {item.fornavn} {item.etternavn[0]}.
+                        </div>
+                    ))}
+                </div>
             </div>
             <div className="text-center p-5">
                 <div key={currentRound}>
                     <div className="grid grid-cols-3 gap-4">
-                        <div>
+                        {/* Previous round button with stacked text and arrow */}
+                        <div className="flex items-center justify-center">
                             {currentRound > 0 && (
                                 <button
-                                    className="rounded-md w-12 border m-2 px-4 py-2 bg-blue-400"
+                                    className="flex flex-col items-center justify-center rounded-md border m-2 px-4 py-2 bg-blue-400 text-white w-32"
                                     onClick={goToPrevRound}
                                 >
+                                    <span className="text-white">Previous</span>
+                                    <span className="text-white">round</span>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="16"
                                         height="16"
                                         fill="white"
-                                        className="bi bi-arrow-left"
+                                        className="bi bi-arrow-left mt-1"
                                         viewBox="0 0 16 16"
                                     >
                                         <path
@@ -228,21 +239,27 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                 </button>
                             )}
                         </div>
-                        <div className="text-slate-700 font-bold mb-2">
-                            {round[0][0]}
+
+                        {/* Current round text */}
+                        <div className="text-slate-700 font-bold text-2xl">
+                            Round {currentRound + 1}
                         </div>
-                        <div>
+
+                        {/* Next round button with stacked text and arrow */}
+                        <div className="flex items-center justify-center">
                             {currentRound < rounds.length - 1 && (
                                 <button
-                                    className="rounded-md w-12 border m-2 px-4 py-2 bg-blue-400"
+                                    className="flex flex-col items-center justify-center rounded-md border m-2 px-4 py-2 bg-blue-400 text-white w-32"
                                     onClick={goToNextRound}
                                 >
+                                    <span className="text-white">Next</span>
+                                    <span className="text-white">round</span>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="16"
                                         height="16"
                                         fill="white"
-                                        className="bi bi-arrow-right"
+                                        className="bi bi-arrow-right mt-1"
                                         viewBox="0 0 16 16"
                                     >
                                         <path
