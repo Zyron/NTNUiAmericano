@@ -167,10 +167,6 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
 
-        data.map((item) => (playerScores[`${item.fornavn} ${item.etternavn}`]=0));
-
-        console.log(playerScores);
-
         // Initialize scores for all players
         data?.forEach((item) => {
             playerScores[`${item.fornavn} ${item.etternavn[0]}.`] = 0;
@@ -213,8 +209,6 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     const sortedPlayers = Object.entries(playerScores)
         .sort((a, b) => b[1] - a[1]);
 
-
-
     return (
         <Container>
             {/* Title */}
@@ -245,8 +239,6 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                     className="flex flex-col items-center justify-center rounded-md border m-2 px-4 py-2 bg-blue-400 text-white w-32"
                                     onClick={goToPrevRound}
                                 >
-                                    <span className="text-white">Previous</span>
-                                    <span className="text-white">round</span>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="16"
@@ -276,8 +268,6 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                     className="flex flex-col items-center justify-center rounded-md border m-2 px-4 py-2 bg-blue-400 text-white w-32"
                                     onClick={goToNextRound}
                                 >
-                                    <span className="text-white">Next</span>
-                                    <span className="text-white">round</span>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="16"
@@ -295,9 +285,8 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                             )}
                         </div>
                     </div>
-
                     <div className="flex justify-center">
-                        <div className="bg-gray-100 rounded-md mb-4 max-w-md md:max-w-lg flex items-center justify-between p-5 w-4/5">
+                        <div className="bg-gray-100 rounded-md mb-4 max-w-3xl md:max-w-4xl flex items-center justify-between p-5 w-full">
                             <div className="flex-col">
                                 {round.slice(1).map((match, matchIndex) => (
                                     <div key={matchIndex}>{match[0]}</div>
