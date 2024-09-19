@@ -19,11 +19,11 @@ interface Match {
 }
 
 const sendData = async (
-    number: number
+    timeid: number
 ): Promise<{ data: Item[] | null; error: string | null }> => {
     try {
         const res = await fetch(
-            `http://localhost:3000/api/get-data?number=${number}`
+            `http://localhost:3000/api/get-data?timeid=${timeid}`
         );
         const data = await res.json();
 
@@ -106,11 +106,24 @@ function formatMatchups(matchups: Matchup): string[][][] {
 
 const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from 0 to 16
 
-export const getServerSideProps: GetServerSideProps<
-    HomeProps
-> = async (): Promise<GetServerSidePropsResult<HomeProps>> => {
-    const numberToSend = 107; // Replace with the desired number
-    const { data, error } = await sendData(numberToSend);
+export const getServerSideProps: GetServerSideProps<HomeProps> = async (context): Promise<GetServerSidePropsResult<HomeProps>> => {
+    // Log the full query object to debug
+    console.log("Query parameters:", context.query);
+
+    // Retrieve the 'timeid' query parameter from the context
+    const { timeid } = context.query;
+
+    // Parse 'timeid' into an integer (or fallback to 165 if not provided)
+    const timeidToSend = timeid ? parseInt(timeid as string, 10) : 165;
+
+    // Log the timeid to be sent to the API for debugging
+    console.log("timeid to send:", timeidToSend);
+
+    // Send the timeid in the request
+    const { data, error } = await sendData(timeidToSend);
+
+    // Log the API response data and any error for debugging
+    console.log("API Response:", data, error);
 
     return {
         props: {
