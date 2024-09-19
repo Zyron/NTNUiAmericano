@@ -115,7 +115,7 @@ const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from
 export const getServerSideProps: GetServerSideProps<
     HomeProps
 > = async (): Promise<GetServerSidePropsResult<HomeProps>> => {
-    const numberToSend = 107; // 76; // Replace with the desired number
+    const numberToSend = 190; // 76; // Replace with the desired number
     const { data, error } = await sendData(numberToSend);
 
     return {
