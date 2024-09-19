@@ -7,8 +7,8 @@ import mysql from "mysql";
 
 const connection = mysql.createConnection({
   host: "ntnuitennis.no",
-  user: process.env.DATABASE_USERNAME || "", // member of board
-  password: process.env.DATABASE_PASSWORD || "", // power + number 
+  user: process.env.DATABASE_USERNAME || "", // previous member of board
+  password: process.env.DATABASE_PASSWORD || "", // power (a not o) + number 
   database: "tennisgr_web2",
 });
 
@@ -32,16 +32,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   ];
 
   try {
-    const number = req.query.number;
+    const timeid = req.query.timeid;
 
-    if (!number) {
-      res.status(400).json({ error: "Number not provided in the query" });
+    if (!timeid) {
+      res.status(400).json({ error: "timeid not provided in the query" });
       return;
     }
 
 
     const results = await new Promise<any[]>((resolve, reject) => {
-      connection.query('SELECT b.medlemsid, b.fornavn, b.etternavn, b.mobil FROM vikarer a, medlemmer b WHERE a.medlemsid = b.medlemsid AND a.timeid= ? ORDER BY a.bekreftelsestidspunkt', [number], (error, results, fields) => {
+      connection.query('SELECT b.medlemsid, b.fornavn, b.etternavn, b.mobil FROM vikarer a, medlemmer b WHERE a.medlemsid = b.medlemsid AND a.timeid= ? ORDER BY a.bekreftelsestidspunkt', [timeid], (error, results, fields) => {
         if (error) {
           console.log("test1");
           console.log(error);
