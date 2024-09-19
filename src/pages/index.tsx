@@ -75,7 +75,6 @@ function generateRounds(data: any[]): any[][][] {
             rounds.push(round);
         }
     }
-
     return rounds;
 }
 
@@ -150,6 +149,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
             ...prevScores,
             [currentRound]: [score, 16 - score], // Update the scores for the current round
         }));
+        console.log(scores);
     };
 
     if (error) {
@@ -162,34 +162,58 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
 
     const rounds = formatMatchups(generateRounds(data));
     const round = rounds[currentRound]; // Get current round
+    console.log(rounds)
 
-    // Calculate total points for each player
-    const calculatePlayerScores = () => {
+    function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
 
         data.map((item) => (playerScores[`${item.fornavn} ${item.etternavn}`]=0));
 
         console.log(playerScores);
 
+        // Initialize scores for all players
+        data?.forEach((item) => {
+            playerScores[`${item.fornavn} ${item.etternavn[0]}.`] = 0;
+        });
+
         // Iterate over each round and accumulate scores
         rounds.forEach((round, roundIndex) => {
             if (scores[roundIndex]) {
                 const [score1, score2] = scores[roundIndex];
-                round.slice(1).forEach((match, matchIndex) => {
-                    if (match[0]) {
-                        playerScores[match[0]] = (playerScores[match[0]] || 0) + (matchIndex === 0 ? score1 : score2);
+    
+                // Team 1: Player 0 from round[1] and Player 0 from round[2]
+                const team1 = [round[1][0], round[2][0]];
+    
+                // Team 2: Player 1 from round[1] and Player 1 from round[2]
+                const team2 = [round[1][1], round[2][1]];
+    
+                // Assign scores to players in team 1
+                team1.forEach((player) => {
+                    if (playerScores.hasOwnProperty(player)) {
+                        playerScores[player] += score1; // Team 1 gets score1
                     }
-                    if (match[1]) {
-                        playerScores[match[1]] = (playerScores[match[1]] || 0) + (matchIndex === 0 ? score2 : score1);
+                });
+    
+                // Assign scores to players in team 2
+                team2.forEach((player) => {
+                    if (playerScores.hasOwnProperty(player)) {
+                        playerScores[player] += score2; // Team 2 gets score2
                     }
                 });
             }
         });
-
+    
         return playerScores;
-    };
-
+    }
+    
+    
     const playerScores = calculatePlayerScores();
+    
+    // Sort players by score in descending order
+    const sortedPlayers = Object.entries(playerScores)
+        .sort((a, b) => b[1] - a[1]);
+
+
 
     return (
         <Container>
@@ -306,7 +330,31 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     </button>
                 ))}
             </div>
-        </Container>
+            {/* High Score Section */}
+            <div className="flex:col justify-center items-center mt-8 mb-8 bg-white w-full my-0">
+                <h2 className="text-2xl font-bold text-center mb-4">High Scores</h2>
+                <div className="flex justify-center">
+                    <table className="table-auto">
+                        <thead>
+                            <tr>
+                                <th className="px-4 py-2">Rank</th>
+                                <th className="px-4 py-2">Player</th>
+                                <th className="px-4 py-2">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedPlayers.map(([player, score], index) => (
+                                <tr key={player} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
+                                    <td className="border px-4 py-2">{index + 1}</td>
+                                    <td className="border px-4 py-2">{player}</td>
+                                    <td className="border px-4 py-2">{score}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            </Container>
     );
 };
 
