@@ -53,7 +53,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     // Check the length of the results
-    if (results.length === 4) {
+    if (results.length === 4 || results.length === 5 || results.length === 6) {
       console.log("test3");
       res.status(200).json(results);
     } else {

@@ -46,6 +46,7 @@ const sendData = async (
 function generateRounds(data: any[]): any[][][] {
     let numPlayers = data.length;
 
+    // Map players to formatted names (First Name + Last Name Initial)
     let players = data.map(
         (item) => item.fornavn + " " + item.etternavn[0] + "."
     );
@@ -53,10 +54,33 @@ function generateRounds(data: any[]): any[][][] {
     let rounds: any[][][] = [];
 
     if (numPlayers === 4) {
+        // Hardcoded rounds for 4 players
         rounds = [
             [[players[0], players[1]], [players[2], players[3]], []],
             [[players[0], players[2]], [players[1], players[3]], []],
             [[players[0], players[3]], [players[1], players[2]], []],
+        ];
+    } else if (numPlayers === 5) {
+        // Hardcoded rounds for 5 players using your provided structure
+        rounds = [
+            [[players[1], players[4]], [players[0], players[2]], [players[3]]], // Round 1: Player 3 rests
+            [[players[1], players[2]], [players[0], players[3]], [players[4]]], // Round 2: Player 4 rests
+            [[players[0], players[1]], [players[3], players[4]], [players[2]]], // Round 3: Player 2 rests
+            [[players[1], players[3]], [players[4], players[2]], [players[0]]], // Round 4: Player 0 rests
+            [[players[0], players[4]], [players[3], players[2]], [players[1]]], // Round 5: Player 1 rests
+        ];
+    } else if (numPlayers === 6) {
+        // Hardcoded rounds for 6 players using your provided structure
+        rounds = [
+            [[players[0], players[1]], [players[2], players[3]], [players[4], players[5]]], // Round 1
+            [[players[4], players[5]], [players[3], players[1]], [players[0], players[2]]], // Round 2
+            [[players[5], players[1]], [players[2], players[0]], [players[4], players[3]]], // Round 3
+            [[players[4], players[3]], [players[0], players[5]], [players[2], players[1]]], // Round 4
+            [[players[0], players[4]], [players[2], players[1]], [players[5], players[3]]], // Round 5
+            [[players[5], players[3]], [players[4], players[1]], [players[0], players[2]]], // Round 6
+            [[players[2], players[4]], [players[0], players[3]], [players[5], players[1]]], // Round 7
+            [[players[1], players[2]], [players[0], players[5]], [players[3], players[4]]], // Round 8
+            [[players[2], players[5]], [players[3], players[4]], [players[0], players[1]]], // Round 9
         ];
     } else {
         for (let i = 0; i < numPlayers; i++) {
@@ -75,6 +99,7 @@ function generateRounds(data: any[]): any[][][] {
             rounds.push(round);
         }
     }
+
     return rounds;
 }
 
