@@ -1,6 +1,5 @@
 import { GetServerSideProps, GetServerSidePropsResult } from "next";
 import Container from "@/components/Container";
-import Link from "next/link";
 import { useState } from "react";
 
 interface Item {
@@ -235,6 +234,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         .sort((a, b) => b[1] - a[1]);
 
     return (
+        <div className="bg-white">
         <Container>
             {/* Title */}
             <p className="flex justify-center text-4xl text-black">Americano</p>
@@ -256,7 +256,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
             </div>
             <div className="text-center p-5">
                 <div key={currentRound}>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3">
                         {/* Previous round button with stacked text and arrow */}
                         <div className="flex items-center justify-center">
                             {currentRound > 0 && (
@@ -266,15 +266,17 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
-                                        width="16"
-                                        height="16"
+                                        width="24"
+                                        height="24"
                                         fill="white"
-                                        className="bi bi-arrow-left mt-1"
+                                        className="bi bi-arrow-left fill-3"
                                         viewBox="0 0 16 16"
                                     >
                                         <path
                                             fillRule="evenodd"
                                             d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"
+                                            stroke="white"
+                                            strokeWidth="1"
                                         />
                                     </svg>
                                 </button>
@@ -282,7 +284,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                         </div>
 
                         {/* Current round text */}
-                        <div className="text-slate-700 font-bold text-2xl">
+                        <div className="flex text-slate-700 font-bold text-2xl items-center justify-center">
                             Round {currentRound + 1}
                         </div>
 
@@ -295,15 +297,17 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
-                                        width="16"
-                                        height="16"
+                                        width="24"
+                                        height="24"
                                         fill="white"
-                                        className="bi bi-arrow-right mt-1"
+                                        className="bi bi-arrow-right"
                                         viewBox="0 0 16 16"
                                     >
                                         <path
                                             fillRule="evenodd"
                                             d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"
+                                            stroke="white"
+                                            strokeWidth="1"
                                         />
                                     </svg>
                                 </button>
@@ -317,11 +321,11 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                     <div key={matchIndex}>{match[0]}</div>
                                 ))}
                             </div>
-                            <div className="font-bold text-xl">
+                            <div className="font-bold text-3xl">
                                 {scores[currentRound] ? scores[currentRound][0] : 0} {/* Correct way to access Score 1 for the current round */}
                             </div>
                             {round.length > 1 && <div>vs</div>}
-                            <div className="font-bold text-xl">
+                            <div className="font-bold text-3xl">
                                 {scores[currentRound] ? scores[currentRound][1] : 0} {/* Correct way to access Score 2 for the current round */}
                             </div>
                             <div className="flex flex-col">
@@ -333,42 +337,42 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     </div>
                 </div>
             </div>
-            <div className="flex flex-wrap justify-center">
+            <div className="flex flex-wrap justify-center items-center">
                 {buttons.map((button) => (
                     <button
                         key={button}
-                        className="rounded-md w-12 border m-2 px-4 py-2 bg-gray-100"
+                        className="flex rounded-md w-12 border m-1 p-1 bg-gray-200 text-2xl font-semibold text-center justify-center items-center"
                         onClick={() => updateScores(button)} // Add an onClick handler here
                     >
                         {button}
                     </button>
                 ))}
             </div>
-            {/* High Score Section */}
-            <div className="flex:col justify-center items-center mt-8 mb-8 bg-white w-full my-0">
-                <h2 className="text-2xl font-bold text-center mb-4">High Scores</h2>
-                <div className="flex justify-center">
-                    <table className="table-auto">
-                        <thead>
-                            <tr>
-                                <th className="px-4 py-2">Rank</th>
-                                <th className="px-4 py-2">Player</th>
-                                <th className="px-4 py-2">Score</th>
+        </Container>
+        <div className="flex:col justify-center items-center mt-36 mb-8 bg-white w-full my-0">
+            <h2 className="text-2xl font-bold text-center mb-4">High Scores</h2>
+            <div className="flex justify-center">
+                <table className="table-auto">
+                    <thead>
+                        <tr>
+                            <th className="px-4 py-2">Rank</th>
+                            <th className="px-4 py-2">Player</th>
+                            <th className="px-4 py-2">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sortedPlayers.map(([player, score], index) => (
+                            <tr key={player} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
+                                <td className="border px-4 py-2">{index + 1}</td>
+                                <td className="border px-4 py-2">{player}</td>
+                                <td className="border px-4 py-2">{score}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {sortedPlayers.map(([player, score], index) => (
-                                <tr key={player} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
-                                    <td className="border px-4 py-2">{index + 1}</td>
-                                    <td className="border px-4 py-2">{player}</td>
-                                    <td className="border px-4 py-2">{score}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </div>
-            </Container>
+        </div>
+        </div>
     );
 };
 
