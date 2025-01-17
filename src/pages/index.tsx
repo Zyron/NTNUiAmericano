@@ -1,6 +1,6 @@
 import { GetServerSideProps, GetServerSidePropsResult } from "next";
 import Container from "@/components/Container";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Item {
     medlemsid: number;
@@ -42,11 +42,18 @@ const sendData = async (
     }
 };
 
-function generateRounds(data: any[]): any[][][] {
-    let numPlayers = data.length;
+function shuffleArray(array: any[]) {
+    return array
+        .map((value) => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
+}
 
-    // Map players to formatted names (First Name + Last Name Initial)
-    let players = data.map(
+function generateRounds(data: any[]): any[][][] {    
+    const shuffledPlayers = shuffleArray(data);  // Shuffle players first
+    const numPlayers = shuffledPlayers.length;
+
+    const players = shuffledPlayers.map(
         (item) => item.fornavn + " " + item.etternavn[0] + "."
     );
 
@@ -158,8 +165,25 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
 };
 
 const Home: React.FC<HomeProps> = ({ data, error }) => {
+    const [rounds, setRounds] = useState<string[][][]>([]);  // ✅ Added this line
+    const [previousRounds, setPreviousRounds] = useState<string[][][]>([]);
     const [currentRound, setCurrentRound] = useState(0); // State for current round
     const [scores, setScores] = useState<{ [key: number]: [number, number] }>({}); // Dictionary for storing scores for each round
+    const [currentRanking, setCurrentRanking] = useState<[string, number][]>([]);
+
+    useEffect(() => {
+        if (data) {
+            const initialRounds = formatMatchups(generateRounds(data));
+            setRounds(initialRounds);
+            setPreviousRounds(initialRounds);
+        }
+    }, [data]);
+
+    useEffect(() => {
+        const updatedScores = calculatePlayerScores();
+        const sortedRanking = Object.entries(updatedScores).sort((a, b) => b[1] - a[1]);
+        setCurrentRanking(sortedRanking);
+    }, [scores, rounds]);
 
     const goToNextRound = () => {
         setCurrentRound((prevRound) => prevRound + 1);
@@ -171,9 +195,8 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     const updateScores = (score: number) => {
         setScores((prevScores) => ({
             ...prevScores,
-            [currentRound]: [score, 16 - score], // Update the scores for the current round
+            [currentRound]: [score, 16 - score],  // 16 is the total game score
         }));
-        console.log(scores);
     };
 
     if (error) {
@@ -184,9 +207,9 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         return <div>Loading...</div>;
     }
 
-    const rounds = formatMatchups(generateRounds(data));
-    const round = rounds[currentRound]; // Get current round
+    const round = rounds[currentRound] || []; // Get current round
     console.log(rounds)
+
 
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
@@ -225,14 +248,45 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     
         return playerScores;
     }
+
+    function areRoundsEqual(rounds1: any[][][], rounds2: any[][][]) {
+        return JSON.stringify(rounds1) === JSON.stringify(rounds2);
+    }
+
+    function generateUniqueRounds(data: any[], previousRounds: any[][][]) {
+        let newRounds: any[][][] = [];
+        let attempts = 0;
     
+        do {
+            newRounds = generateRounds(data);  // Generates with shuffled players
+            attempts++;
+        } while (areRoundsEqual(newRounds, previousRounds) && attempts < 10);  // Retry if same
     
+        return newRounds;
+    }
+
     const playerScores = calculatePlayerScores();
-    
+    const currentPlayerScores = calculatePlayerScores();
+
     // Sort players by score in descending order
     const sortedPlayers = Object.entries(playerScores)
         .sort((a, b) => b[1] - a[1]);
 
+    const startNewGame = () => {
+        const newRounds = generateUniqueRounds(data, previousRounds);
+        const formattedRounds = formatMatchups(newRounds);  // Ensure proper formatting
+    
+        setRounds(formattedRounds);
+        setPreviousRounds(newRounds);
+        setCurrentRound(0);
+        setScores({});
+        setCurrentRanking([]);
+    };
+
+    if (!rounds.length) {
+        return <div>Loading rounds...</div>;
+    }
+    
     return (
         <div className="bg-white">
         <Container>
@@ -317,7 +371,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     <div className="flex justify-center">
                         <div className="bg-gray-100 rounded-md mb-4 max-w-3xl md:max-w-4xl flex items-center justify-between p-5 w-full">
                             <div className="flex-col">
-                                {round.slice(1).map((match, matchIndex) => (
+                                {round && round.slice(1).map((match, matchIndex) => (
                                     <div key={matchIndex}>{match[0]}</div>
                                 ))}
                             </div>
@@ -348,30 +402,43 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     </button>
                 ))}
             </div>
-        </Container>
-        <div className="flex:col justify-center items-center mt-36 mb-8 bg-white w-full my-0">
-            <h2 className="text-2xl font-bold text-center mb-4">High Scores</h2>
-            <div className="flex justify-center">
-                <table className="table-auto">
-                    <thead>
-                        <tr>
-                            <th className="px-4 py-2">Rank</th>
-                            <th className="px-4 py-2">Player</th>
-                            <th className="px-4 py-2">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedPlayers.map(([player, score], index) => (
-                            <tr key={player} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
-                                <td className="border px-4 py-2">{index + 1}</td>
-                                <td className="border px-4 py-2">{player}</td>
-                                <td className="border px-4 py-2">{score}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {currentRound === rounds.length - 1 && scores[currentRound] && (
+                <div className="mt-10">
+                    <h2 className="text-2xl font-bold text-center">High Scores</h2>
+                    <div className="flex justify-center">
+                        <table className="table-auto mt-4">
+                            <thead>
+                                <tr>
+                                    <th className="px-4 py-2">Rank</th>
+                                    <th className="px-4 py-2">Player</th>
+                                    <th className="px-4 py-2">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentRanking.map(([player, score], index) => (
+                                    <tr key={player} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
+                                        <td className="border px-4 py-2">{index + 1}</td>
+                                        <td className="border px-4 py-2">{player}</td>
+                                        <td className="border px-4 py-2">{score}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+            {/* New Round Button */}
+            <div className="flex justify-center mt-4">
+                {currentRound === rounds.length - 1 && scores[currentRound] && (
+                    <button
+                        className="rounded-md border px-4 py-2 bg-green-500 text-white text-lg font-semibold"
+                        onClick={startNewGame}
+                    >
+                        Start New Game
+                    </button>
+                )}
             </div>
-        </div>
+        </Container>
         </div>
     );
 };
