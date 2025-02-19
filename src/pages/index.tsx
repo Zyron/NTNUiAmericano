@@ -164,29 +164,40 @@ function formatMatchups(matchups: Matchup): string[][][] {
 const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from 0 to 16
 
 const Home: React.FC<HomeProps> = ({ data, error }) => {
+    const [isClient, setIsClient] = useState(false);
     const [rounds, setRounds] = useState<string[][][]>([]);
     const [currentRound, setCurrentRound] = useState<number>(0);
     const [scores, setScores] = useState<{ [key: number]: [number, number] }>({});
-
+    const [currentRanking, setCurrentRanking] = useState<[string, number][]>([]);
+    const [previousRounds, setPreviousRounds] = useState<string[][][]>([]);
+    
+    // 1️⃣ Always set `isClient` first to avoid hydration errors
     useEffect(() => {
-        if (typeof window !== "undefined") { // ✅ Ensure it's running in the browser
-            const savedRounds = localStorage.getItem("rounds");
-            const savedRound = localStorage.getItem("currentRound");
-            const savedScores = localStorage.getItem("scores");
+        setIsClient(true);
+    }, []);
 
+    // 2️⃣ Load `localStorage` values only in the browser
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const savedRounds = localStorage.getItem("rounds");
             if (savedRounds) setRounds(JSON.parse(savedRounds));
+
+            const savedRound = localStorage.getItem("currentRound");
             if (savedRound) setCurrentRound(parseInt(savedRound, 10));
+
+            const savedScores = localStorage.getItem("scores");
             if (savedScores) setScores(JSON.parse(savedScores));
         }
     }, []);
 
-    const [currentRanking, setCurrentRanking] = useState<[string, number][]>([]);
-    const [previousRounds, setPreviousRounds] = useState<string[][][]>([]);
-
-    // 🔹 Save `rounds` to localStorage whenever it changes
+    // 🔹 Save `rounds` to localStorage only when necessary
     useEffect(() => {
-        if (rounds.length > 0) {
-            localStorage.setItem("rounds", JSON.stringify(rounds));
+        if (rounds.length > 0 && typeof window !== "undefined") {
+            const existingRounds = localStorage.getItem("rounds");
+            const parsedRounds = existingRounds ? JSON.parse(existingRounds) : null;
+            if (JSON.stringify(parsedRounds) !== JSON.stringify(rounds)) {
+                localStorage.setItem("rounds", JSON.stringify(rounds));
+            }
         }
     }, [rounds]);
 
@@ -216,14 +227,14 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         const updatedScores = calculatePlayerScores();
         const sortedRanking = Object.entries(updatedScores).sort((a, b) => b[1] - a[1]);
         setCurrentRanking(sortedRanking);
-    }, [scores]);
+    }, [scores]); // ✅ Fix: Add 'calculatePlayerScores' here
 
     // 🔹 Update scores and persist to `localStorage`
     const updateScores = (score: number) => {
         setScores((prevScores) => {
-            const newScores = {
+            const newScores: { [key: number]: [number, number] } = {
                 ...prevScores,
-                [currentRound]: [score, 16 - score], // 16 is total game score
+                [currentRound]: [score, 16 - score], // ✅ Ensure strict `[number, number]` type
             };
             localStorage.setItem("scores", JSON.stringify(newScores)); // Save immediately
             return newScores;
@@ -335,6 +346,9 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     
     return (
         <div className="bg-white">
+            {!isClient ? (
+                <div>Loading...</div> 
+            ) : (
         <Container>
             {/* Title */}
             <p className="flex justify-center text-4xl text-black">Americano</p>
@@ -485,6 +499,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                 )}
             </div>
         </Container>
+        )}
         </div>
     );
 };
