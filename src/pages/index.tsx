@@ -17,31 +17,57 @@ interface Match {
     [index: number]: string[];
 }
 
+
 const sendData = async (
-    timeid: number
+    timeid: number,
+    host: string
 ): Promise<{ data: Item[] | null; error: string | null }> => {
     try {
-        const res = await fetch(
-            `http://localhost:3000/api/get-data?timeid=${timeid}`
-        );
+        const apiUrl = `http://${host}/api/get-data?timeid=${timeid}`; // Use detected host
+
+        const res = await fetch(apiUrl);
         const data = await res.json();
 
         return {
             data,
             error: null,
         };
-    } catch (error: unknown) {
-        const errorMessage =
-            error instanceof Error
-                ? error.message
-                : "An unknown error occurred";
+    } catch (error) {
         return {
             data: null,
-            error: errorMessage,
+            error: error instanceof Error ? error.message : "An unknown error occurred",
         };
     }
 };
 
+export const getServerSideProps: GetServerSideProps<HomeProps> = async (context): Promise<GetServerSidePropsResult<HomeProps>> => {
+    // Log the full query object to debug
+    // console.log("Query parameters:", context.query);
+
+    const host = context.req.headers.host || "localhost:3000"; // Detect running port
+
+    // Retrieve the 'timeid' query parameter from the context
+    const { timeid } = context.query;
+
+    // Parse 'timeid' into an integer (or fallback to 165 if not provided)
+    const timeidToSend = timeid ? parseInt(timeid as string, 10) : 180;
+
+    // Log the timeid to be sent to the API for debugging
+    // console.log("timeid to send:", timeidToSend);
+
+    // Send the timeid in the request
+    const { data, error } = await sendData(timeidToSend, host);
+
+    // Log the API response data and any error for debugging
+    // console.log("API Response:", data, error);
+
+    return {
+        props: {
+            data,
+            error,
+        },
+    };
+};
 function shuffleArray(array: any[]) {
     return array
         .map((value) => ({ value, sort: Math.random() }))
@@ -136,33 +162,6 @@ function formatMatchups(matchups: Matchup): string[][][] {
 }
 
 const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from 0 to 16
-
-export const getServerSideProps: GetServerSideProps<HomeProps> = async (context): Promise<GetServerSidePropsResult<HomeProps>> => {
-    // Log the full query object to debug
-    // console.log("Query parameters:", context.query);
-
-    // Retrieve the 'timeid' query parameter from the context
-    const { timeid } = context.query;
-
-    // Parse 'timeid' into an integer (or fallback to 165 if not provided)
-    const timeidToSend = timeid ? parseInt(timeid as string, 10) : 165;
-
-    // Log the timeid to be sent to the API for debugging
-    // console.log("timeid to send:", timeidToSend);
-
-    // Send the timeid in the request
-    const { data, error } = await sendData(timeidToSend);
-
-    // Log the API response data and any error for debugging
-    // console.log("API Response:", data, error);
-
-    return {
-        props: {
-            data,
-            error,
-        },
-    };
-};
 
 const Home: React.FC<HomeProps> = ({ data, error }) => {
     const [rounds, setRounds] = useState<string[][][]>([]);  // ✅ Added this line
