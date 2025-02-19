@@ -164,12 +164,45 @@ function formatMatchups(matchups: Matchup): string[][][] {
 const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from 0 to 16
 
 const Home: React.FC<HomeProps> = ({ data, error }) => {
-    const [rounds, setRounds] = useState<string[][][]>([]);  // ✅ Added this line
-    const [previousRounds, setPreviousRounds] = useState<string[][][]>([]);
-    const [currentRound, setCurrentRound] = useState(0); // State for current round
-    const [scores, setScores] = useState<{ [key: number]: [number, number] }>({}); // Dictionary for storing scores for each round
-    const [currentRanking, setCurrentRanking] = useState<[string, number][]>([]);
+    const [rounds, setRounds] = useState<string[][][]>([]);
+    const [currentRound, setCurrentRound] = useState<number>(0);
+    const [scores, setScores] = useState<{ [key: number]: [number, number] }>({});
 
+    useEffect(() => {
+        if (typeof window !== "undefined") { // ✅ Ensure it's running in the browser
+            const savedRounds = localStorage.getItem("rounds");
+            const savedRound = localStorage.getItem("currentRound");
+            const savedScores = localStorage.getItem("scores");
+
+            if (savedRounds) setRounds(JSON.parse(savedRounds));
+            if (savedRound) setCurrentRound(parseInt(savedRound, 10));
+            if (savedScores) setScores(JSON.parse(savedScores));
+        }
+    }, []);
+
+    const [currentRanking, setCurrentRanking] = useState<[string, number][]>([]);
+    const [previousRounds, setPreviousRounds] = useState<string[][][]>([]);
+
+    // 🔹 Save `rounds` to localStorage whenever it changes
+    useEffect(() => {
+        if (rounds.length > 0) {
+            localStorage.setItem("rounds", JSON.stringify(rounds));
+        }
+    }, [rounds]);
+
+    // 🔹 Save `currentRound` to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem("currentRound", currentRound.toString());
+    }, [currentRound]);
+
+    // 🔹 Save `scores` to localStorage whenever it changes
+    useEffect(() => {
+        if (Object.keys(scores).length > 0) {
+            localStorage.setItem("scores", JSON.stringify(scores));
+        }
+    }, [scores]);
+
+    // 🔹 Generate rounds when `data` changes
     useEffect(() => {
         if (data) {
             const initialRounds = formatMatchups(generateRounds(data));
@@ -178,26 +211,36 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         }
     }, [data]);
 
+    // 🔹 Calculate rankings when `scores` change
     useEffect(() => {
         const updatedScores = calculatePlayerScores();
         const sortedRanking = Object.entries(updatedScores).sort((a, b) => b[1] - a[1]);
         setCurrentRanking(sortedRanking);
-    }, [scores, rounds]);
+    }, [scores]);
 
+    // 🔹 Update scores and persist to `localStorage`
+    const updateScores = (score: number) => {
+        setScores((prevScores) => {
+            const newScores = {
+                ...prevScores,
+                [currentRound]: [score, 16 - score], // 16 is total game score
+            };
+            localStorage.setItem("scores", JSON.stringify(newScores)); // Save immediately
+            return newScores;
+        });
+    };
+
+    // 🔹 Move to next round
     const goToNextRound = () => {
         setCurrentRound((prevRound) => prevRound + 1);
     };
+
+    // 🔹 Move to previous round
     const goToPrevRound = () => {
         setCurrentRound((prevRound) => prevRound - 1);
     };
 
-    const updateScores = (score: number) => {
-        setScores((prevScores) => ({
-            ...prevScores,
-            [currentRound]: [score, 16 - score],  // 16 is the total game score
-        }));
-    };
-
+    // 🔹 Handle errors
     if (error) {
         return <div>Error: {error}</div>;
     }
@@ -207,8 +250,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     }
 
     const round = rounds[currentRound] || []; // Get current round
-    console.log(rounds)
-
+    console.log(rounds);
 
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
@@ -273,13 +315,18 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
 
     const startNewGame = () => {
         const newRounds = generateUniqueRounds(data, previousRounds);
-        const formattedRounds = formatMatchups(newRounds);  // Ensure proper formatting
+        const formattedRounds = formatMatchups(newRounds);
     
         setRounds(formattedRounds);
         setPreviousRounds(newRounds);
         setCurrentRound(0);
         setScores({});
         setCurrentRanking([]);
+    
+        // Clear localStorage
+        localStorage.removeItem("rounds");
+        localStorage.removeItem("currentRound");
+        localStorage.removeItem("scores");
     };
 
     if (!rounds.length) {
