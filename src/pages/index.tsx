@@ -28,6 +28,11 @@ interface Round {
     bench: Player[];
 }
 
+const rounds: Round[] = [
+    { team1: [], team2: [], bench: [] },
+    { team1: [], team2: [], bench: [] }
+];
+
 const sendData = async (
     timeid: number,
     host: string,
@@ -78,7 +83,6 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
     };
 };
 
-
 function shuffleArray(array: any[]) {
     return array
         .map((value) => ({ value, sort: Math.random() }))
@@ -86,22 +90,24 @@ function shuffleArray(array: any[]) {
         .map(({ value }) => value);
 }
 
-function generateRounds(players: Player[], lastBenchedPlayers?: Player[]): Round[] {
+function generateRounds(players: Player[], lastBenchedPlayers: Player[] = []): Round[] {
     console.log("🏓 Generating new rounds...");
-    console.log("🔍 Last benched players:", lastBenchedPlayers?.map(p => p.name));
+    console.log("🔍 Last benched players:", lastBenchedPlayers.map(p => p.name));
 
     let shuffledPlayers = shuffleArray([...players]);
 
     console.log("🔀 Initial shuffle:", shuffledPlayers.map(p => p.name));
 
-    // Ensure last benched players get priority in round 1
-    if (lastBenchedPlayers?.length) {
+    // ✅ Ensure last benched players get priority in round 1
+    /*
+    if (lastBenchedPlayers.length) {
         shuffledPlayers = shuffledPlayers.filter(
             player => !lastBenchedPlayers.some(benched => benched.id === player.id)
         );
         shuffledPlayers = [...lastBenchedPlayers, ...shuffledPlayers]; // Move them to the front
         console.log("✅ Ensuring last benched players play in round 1:", shuffledPlayers.map(p => p.name));
     }
+    */
 
     // Generate rounds as before
     let rounds: Round[] = [];
@@ -136,6 +142,8 @@ function generateRounds(players: Player[], lastBenchedPlayers?: Player[]): Round
       ];
     }
   
+    console.log("✅ Generated Rounds:", rounds);
+
     return rounds;
 }
 
@@ -148,18 +156,64 @@ function formatMatchups(matchups: Round[]): string[][][] {
         let roundText: string[][] = [];
         roundText.push([`Round ${index + 1}`]);
 
-        if (
-            round.team1.length > 0 &&
-            round.team2.length > 0
-        ) {
+        if (round.team1.length > 0 && round.team2.length > 0) {
             roundText.push([`${round.team1[0].name}`, `${round.team2[0].name}`]);
             roundText.push([`${round.team1[1].name}`, `${round.team2[1].name}`]);
         }
+
+        // ✅ Show the benched player(s)
+        //if (round.bench.length > 0) {
+        //    roundText.push([`Benched: ${round.bench.map(player => player.name).join(", ")}`]);
+        //}
 
         rounds.push(roundText);
     });
 
     return rounds;
+}
+
+function setLocalStorageWithExpiry(key: string, value: any, ttl: number) {
+    const now = new Date();
+
+    const item = {
+        value: value,
+        expiry: now.getTime() + ttl, // Expiration time in milliseconds
+    };
+
+    localStorage.setItem(key, JSON.stringify(item));
+}
+
+function getLocalStorageWithExpiry(key: string) {
+    const itemStr = localStorage.getItem(key);
+    
+    if (!itemStr) {
+        return null; // No stored data
+    }
+
+    try {
+        const item = JSON.parse(itemStr);
+        const now = new Date();
+
+        // Check if expired
+        if (now.getTime() > item.expiry) {
+            localStorage.removeItem(key); // Clear expired data
+            return null;
+        }
+
+        return item.value;
+    } catch (error) {
+        console.error(`Error parsing localStorage key "${key}":`, error);
+        localStorage.removeItem(key); // Remove corrupted data
+        return null;
+    }
+}
+
+function removeLocalStorageKey(key: string) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.error(`❌ Failed to remove localStorage key "${key}":`, error);
+    }
 }
 
 const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from 0 to 16
@@ -180,46 +234,49 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     // 2️⃣ Load `localStorage` values only in the browser
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const savedRounds = localStorage.getItem("rounds");
-            if (savedRounds) setRounds(JSON.parse(savedRounds));
-
-            const savedRound = localStorage.getItem("currentRound");
-            if (savedRound) setCurrentRound(parseInt(savedRound, 10));
-
-            const savedScores = localStorage.getItem("scores");
-            if (savedScores) setScores(JSON.parse(savedScores));
+            const savedRounds = getLocalStorageWithExpiry("rounds");
+            if (savedRounds) setRounds(savedRounds);
+    
+            const savedRound = getLocalStorageWithExpiry("currentRound");
+            if (savedRound !== null) setCurrentRound(parseInt(savedRound, 10));
+    
+            const savedScores = getLocalStorageWithExpiry("scores");
+            if (savedScores) setScores(savedScores);
         }
     }, []);
 
     // 🔹 Save `rounds` to localStorage only when necessary
     useEffect(() => {
         if (rounds.length > 0 && typeof window !== "undefined") {
-            const existingRounds = localStorage.getItem("rounds");
-            const parsedRounds = existingRounds ? JSON.parse(existingRounds) : null;
-            if (JSON.stringify(parsedRounds) !== JSON.stringify(rounds)) {
-                localStorage.setItem("rounds", JSON.stringify(rounds));
+            const existingRounds = getLocalStorageWithExpiry("rounds"); // Use expiration-aware retrieval
+            const hasChanged = !existingRounds || JSON.stringify(existingRounds) !== JSON.stringify(rounds);
+    
+            if (hasChanged) {
+                setLocalStorageWithExpiry("rounds", rounds, 3600000); // Store with 1-hour expiry
             }
         }
     }, [rounds]);
 
-    // 🔹 Save `currentRound` to localStorage whenever it changes
+    // 🔹 Save `currentRound` to localStorage whenever it changes (with expiry)
     useEffect(() => {
-        localStorage.setItem("currentRound", currentRound.toString());
+        if (typeof window !== "undefined") {
+            setLocalStorageWithExpiry("currentRound", currentRound.toString(), 3600000); // 1-hour expiry
+        }
     }, [currentRound]);
 
-    // 🔹 Save `scores` to localStorage whenever it changes
+    // 🔹 Save `scores` to localStorage whenever it changes (with expiry)
     useEffect(() => {
-        if (Object.keys(scores).length > 0) {
-            localStorage.setItem("scores", JSON.stringify(scores));
+        if (typeof window !== "undefined" && Object.keys(scores).length > 0) {
+            setLocalStorageWithExpiry("scores", scores, 3600000); // 1-hour expiry
         }
     }, [scores]);
 
     // 🔹 Generate rounds when `data` changes
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const savedRounds = localStorage.getItem("rounds");
+            const savedRounds = getLocalStorageWithExpiry("rounds");
             if (savedRounds) {
-                setRounds(JSON.parse(savedRounds)); // ✅ Load saved rounds
+                setRounds(savedRounds);
             } else if (data) {
                 const players: Player[] = data.map(item => ({
                     id: item.medlemsid,
@@ -227,8 +284,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                 }));
                 const initialRounds = formatMatchups(generateRounds(players));
                 setRounds(initialRounds);
-                setPreviousRounds(initialRounds);
-                localStorage.setItem("rounds", JSON.stringify(initialRounds)); // ✅ Save rounds
+                setLocalStorageWithExpiry("rounds", initialRounds, 3600000); // Save with 1-hour expiry
             }
         }
     }, [data]); // ✅ Only regenerate rounds if no saved rounds exist
@@ -240,14 +296,20 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         setCurrentRanking(sortedRanking);
     }, [scores]); // ✅ Fix: Add 'calculatePlayerScores' here
 
-    // 🔹 Update scores and persist to `localStorage`
+    // 🔹 Update scores and persist to `localStorage` with 1-hour expiry
     const updateScores = (score: number) => {
         setScores((prevScores) => {
             const newScores: { [key: number]: [number, number] } = {
                 ...prevScores,
-                [currentRound]: [score, 16 - score], // ✅ Ensure strict `[number, number]` type
+                [currentRound]: [score, 16 - score], // ✅ Maintain `[number, number]` structure
             };
-            localStorage.setItem("scores", JSON.stringify(newScores)); // Save immediately
+
+            // Only update localStorage if scores have changed
+            const existingScores = getLocalStorageWithExpiry("scores");
+            if (!existingScores || JSON.stringify(existingScores) !== JSON.stringify(newScores)) {
+                setLocalStorageWithExpiry("scores", newScores, 3600000); // 1-hour expiry
+            }
+
             return newScores;
         });
     };
@@ -271,8 +333,8 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         return <div>Loading...</div>;
     }
 
-    const round = rounds[currentRound] || []; // Get current round
-    console.log(rounds);
+    const round = rounds.length > 0 && rounds[currentRound] ? rounds[currentRound] : [];
+    console.log("Current Round Data:", round);
 
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
@@ -315,8 +377,20 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         return playerScores;
     }
 
-    function areRoundsEqual(rounds1: any[][][], rounds2: any[][][]) {
-        return JSON.stringify(rounds1) === JSON.stringify(rounds2);
+    //function areRoundsEqual(rounds1: any[][][], rounds2: any[][][]) {
+    //    return JSON.stringify(rounds1) === JSON.stringify(rounds2);
+    //}
+
+    function areRoundsEqual(rounds1: any[][][], rounds2: any[][][]): boolean {
+        if (rounds1.length !== rounds2.length) return false;
+    
+        return rounds1.every((round, i) => 
+            round.length === rounds2[i].length &&
+            round.every((match, j) => 
+                match.length === rounds2[i][j].length &&
+                match.every((player, k) => player === rounds2[i][j][k])
+            )
+        );
     }
 
     function generateUniqueRounds(data: any[], previousRounds: any[][][]) {
@@ -340,33 +414,36 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
 
     function startNewGame() {
         if (!rounds.length) return;
-
-        // Extract the last round safely
-        const lastRound: Round | undefined = rounds[rounds.length - 1] as unknown as Round;
-
-        // Ensure `lastBenchedPlayers` is extracted correctly
-        const lastBenchedPlayers: Player[] = lastRound?.bench ? [...lastRound.bench] : [];
-
+    
+        // ✅ Extract last benched players from the last round
+        const lastRound = rounds[rounds.length - 1] || null;
+        const lastBenchedPlayers = lastRound?.bench ? [...lastRound.bench] : [];
+    
         console.log("🔄 Starting new game... Last benched:", lastBenchedPlayers.map(p => p.name));
-        console.log("🔄 Starting new game... Player list:", data);
-
+    
+        localStorage.setItem("lastBenched", JSON.stringify(lastBenchedPlayers)); // ✅ Persist bench players
+    
         if (!data || data.length === 0) return;
-
+    
         const players: Player[] = data.map(item => ({
             id: item.medlemsid,
             name: `${item.fornavn} ${item.etternavn[0]}.`
         }));
-
-        // ✅ Ensure `generateRounds` prioritizes benched players in the first round
-        const newRounds = generateRounds(players, lastBenchedPlayers);
+    
+        // ✅ Load last benched players from storage
+        const storedBenched = JSON.parse(localStorage.getItem("lastBenched") || "[]");
+    
+        // ✅ Generate rounds with stored bench players
+        const newRounds = generateRounds(players, storedBenched);
+    
         setRounds(formatMatchups(newRounds));
         setCurrentRound(0);
         setScores({});
         setCurrentRanking([]);
-
-        localStorage.setItem("rounds", JSON.stringify(newRounds));
-        localStorage.removeItem("currentRound");
-        localStorage.removeItem("scores");
+    
+        setLocalStorageWithExpiry("rounds", newRounds, 3600000);
+        removeLocalStorageKey("currentRound");
+        removeLocalStorageKey("scores");
     }
     
     if (!rounds.length) {
