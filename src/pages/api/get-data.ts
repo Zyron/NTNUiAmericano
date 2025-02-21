@@ -25,10 +25,10 @@ function shuffleArray(array: any[]): any[] {
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   let dummy = [
-    {"medlemsid":10669,"fornavn":"Lars","etternavn":"Føleide","mobil":"+47 98454499"},
-    {"medlemsid":12197,"fornavn":"Anh","etternavn":"Nguyen Pham","mobil":"97904835"},
-    {"medlemsid":12345,"fornavn":"Bob","etternavn":"Dahl","mobil":"99745767"},
-    {"medlemsid":15678,"fornavn":"Alice","etternavn":"Dahl","mobil":"76894556"}
+    {"medlemsid":12679,"fornavn":"Lars","etternavn":"Føleide","mobil":"+47 99554455"},
+    {"medlemsid":12187,"fornavn":"Anh","etternavn":"Nguyen","mobil":"97104835"},
+    {"medlemsid":12375,"fornavn":"Bob","etternavn":"Dylan","mobil":"99745767"},
+    {"medlemsid":15668,"fornavn":"Alice","etternavn":"Wonderland","mobil":"46894556"}
   ];
 
   try {
