@@ -63,7 +63,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
 
     // Parse `timeid` as an integer with a default value of 999 if missing
     const timeidToSend = timeid ? parseInt(timeid as string, 10) : 999;
-
+    
     // Ensure `expiredonehour` is a string ("0" or "1")
     const expiredOneHourParam = expiredonehour ? expiredonehour.toString() : null;
 
@@ -109,21 +109,21 @@ function generateRounds(players: Player[], lastBenchedPlayers?: Player[]): Round
     const numPlayers = shuffledPlayers.length;
 
     if (numPlayers === 4) {
-        rounds = [
+      rounds = [
         { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[3]], bench: [] },
         { team1: [shuffledPlayers[0], shuffledPlayers[2]], team2: [shuffledPlayers[1], shuffledPlayers[3]], bench: [] },
         { team1: [shuffledPlayers[0], shuffledPlayers[3]], team2: [shuffledPlayers[1], shuffledPlayers[2]], bench: [] },
-        ];
+      ];
     } else if (numPlayers === 5) {
-        rounds = [
+      rounds = [
         { team1: [shuffledPlayers[1], shuffledPlayers[4]], team2: [shuffledPlayers[0], shuffledPlayers[2]], bench: [shuffledPlayers[3]] },
         { team1: [shuffledPlayers[1], shuffledPlayers[2]], team2: [shuffledPlayers[0], shuffledPlayers[3]], bench: [shuffledPlayers[4]] },
         { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[3], shuffledPlayers[4]], bench: [shuffledPlayers[2]] },
         { team1: [shuffledPlayers[1], shuffledPlayers[3]], team2: [shuffledPlayers[4], shuffledPlayers[2]], bench: [shuffledPlayers[0]] },
         { team1: [shuffledPlayers[0], shuffledPlayers[4]], team2: [shuffledPlayers[3], shuffledPlayers[2]], bench: [shuffledPlayers[1]] },
-        ];
+      ];
     } else if (numPlayers === 6) {
-        rounds = [
+      rounds = [
         { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[3]], bench: [shuffledPlayers[4], shuffledPlayers[5]] },
         { team1: [shuffledPlayers[4], shuffledPlayers[5]], team2: [shuffledPlayers[3], shuffledPlayers[1]], bench: [shuffledPlayers[0], shuffledPlayers[2]] },
         { team1: [shuffledPlayers[5], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[0]], bench: [shuffledPlayers[4], shuffledPlayers[3]] },
@@ -135,7 +135,7 @@ function generateRounds(players: Player[], lastBenchedPlayers?: Player[]): Round
         { team1: [shuffledPlayers[2], shuffledPlayers[5]], team2: [shuffledPlayers[3], shuffledPlayers[4]], bench: [shuffledPlayers[0], shuffledPlayers[1]] },
       ];
     }
-
+  
     return rounds;
 }
 
@@ -148,10 +148,10 @@ function formatMatchups(matchups: Round[]): string[][][] {
         let roundText: string[][] = [];
         roundText.push([`Round ${index + 1}`]);
 
-            if (
+        if (
             round.team1.length > 0 &&
             round.team2.length > 0
-            ) {
+        ) {
             roundText.push([`${round.team1[0].name}`, `${round.team2[0].name}`]);
             roundText.push([`${round.team1[1].name}`, `${round.team2[1].name}`]);
         }
@@ -226,8 +226,8 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     name: `${item.fornavn} ${item.etternavn[0]}.`
                 }));
                 const initialRounds = formatMatchups(generateRounds(players));
-            setRounds(initialRounds);
-            setPreviousRounds(initialRounds);
+                setRounds(initialRounds);
+                setPreviousRounds(initialRounds);
                 localStorage.setItem("rounds", JSON.stringify(initialRounds)); // ✅ Save rounds
             }
         }
@@ -276,12 +276,12 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
 
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
-
+    
         // Initialize scores for all players
         data?.forEach((item) => {
             playerScores[`${item.fornavn} ${item.etternavn[0]}.`] = 0;
         });
-
+    
         // Iterate over each round and accumulate scores
         rounds.forEach((round, roundIndex) => {
             if (scores[roundIndex] && round[1] && round[2]) {
@@ -289,26 +289,26 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     
                 // Ensure round[1] and round[2] are defined and have the expected structure
                 if (round[1] && round[1][0] && round[2] && round[2][0]) {
-                // Team 1: Player 0 from round[1] and Player 0 from round[2]
-                const team1 = [round[1][0], round[2][0]];
+                    // Team 1: Player 0 from round[1] and Player 0 from round[2]
+                    const team1 = [round[1][0], round[2][0]];
     
-                // Team 2: Player 1 from round[1] and Player 1 from round[2]
-                const team2 = [round[1][1], round[2][1]];
+                    // Team 2: Player 1 from round[1] and Player 1 from round[2]
+                    const team2 = [round[1][1], round[2][1]];
     
-                // Assign scores to players in team 1
-                team1.forEach((player) => {
-                    if (playerScores.hasOwnProperty(player)) {
-                        playerScores[player] += score1; // Team 1 gets score1
-                    }
-                });
+                    // Assign scores to players in team 1
+                    team1.forEach((player) => {
+                        if (playerScores.hasOwnProperty(player)) {
+                            playerScores[player] += score1; // Team 1 gets score1
+                        }
+                    });
     
-                // Assign scores to players in team 2
-                team2.forEach((player) => {
-                    if (playerScores.hasOwnProperty(player)) {
-                        playerScores[player] += score2; // Team 2 gets score2
-                    }
-                });
-            }
+                    // Assign scores to players in team 2
+                    team2.forEach((player) => {
+                        if (playerScores.hasOwnProperty(player)) {
+                            playerScores[player] += score2; // Team 2 gets score2
+                        }
+                    });
+                }
             }
         });
     
@@ -363,12 +363,12 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         setCurrentRound(0);
         setScores({});
         setCurrentRanking([]);
-    
+
         localStorage.setItem("rounds", JSON.stringify(newRounds));
         localStorage.removeItem("currentRound");
         localStorage.removeItem("scores");
     }
-
+    
     if (!rounds.length) {
         return <div>Loading rounds...</div>;
     }
