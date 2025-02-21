@@ -416,9 +416,9 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         if (!rounds.length) return;
     
         // ✅ Extract last benched players from the last round
-        const lastRound = rounds[rounds.length - 1] || null;
-        const lastBenchedPlayers = lastRound?.bench ? [...lastRound.bench] : [];
-    
+        const lastRound = rounds.length > 0 ? rounds[rounds.length - 1] : null;
+        const lastBenchedPlayers = lastRound && 'bench' in lastRound ? [...((lastRound as unknown) as Round).bench] : [];
+        
         console.log("🔄 Starting new game... Last benched:", lastBenchedPlayers.map(p => p.name));
     
         localStorage.setItem("lastBenched", JSON.stringify(lastBenchedPlayers)); // ✅ Persist bench players
