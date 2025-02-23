@@ -97,62 +97,56 @@ function shuffleArray(array: any[]) {
         .map(({ value }) => value);
 }
 
-function generateRounds(players: Player[], lastBenchedPlayers: Player[] = []): Round[] {
-    console.log("🏓 Generating new rounds...");
-    console.log("🔍 Last benched players:", lastBenchedPlayers.map(p => p.name));
+const generateRounds = (players: Player[], lastBenched: Player[] = []) => {
+    let shuffledPlayers = [...players];
 
-    let shuffledPlayers = shuffleArray([...players]);
-
-    console.log("🔀 Initial shuffle:", shuffledPlayers.map(p => p.name));
-
-    // ✅ Ensure last benched players get priority in round 1
-    /*
-    if (lastBenchedPlayers.length) {
-        shuffledPlayers = shuffledPlayers.filter(
-            player => !lastBenchedPlayers.some(benched => benched.id === player.id)
-        );
-        shuffledPlayers = [...lastBenchedPlayers, ...shuffledPlayers]; // Move them to the front
-        console.log("✅ Ensuring last benched players play in round 1:", shuffledPlayers.map(p => p.name));
+    if (Array.isArray(lastBenched) && lastBenched.length > 0) {
+        console.log("🔄 Carrying over benched players:", lastBenched);
+        shuffledPlayers = shuffledPlayers.filter(p => !lastBenched.includes(p));
     }
-    */
 
-    // Generate rounds as before
+    // ✅ Shuffle players before assigning them to rounds
+    shuffledPlayers = shuffledPlayers
+        .map(value => ({ value, sort: Math.random() })) // Assign a random sort order
+        .sort((a, b) => a.sort - b.sort) // Sort based on the random value
+        .map(({ value }) => value);
+
+    console.log("🔀 New Player Order:", shuffledPlayers.map(p => p.name));
+
     let rounds: Round[] = [];
-
     const numPlayers = shuffledPlayers.length;
 
     if (numPlayers === 4) {
-      rounds = [
-        { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[3]], bench: [] },
-        { team1: [shuffledPlayers[0], shuffledPlayers[2]], team2: [shuffledPlayers[1], shuffledPlayers[3]], bench: [] },
-        { team1: [shuffledPlayers[0], shuffledPlayers[3]], team2: [shuffledPlayers[1], shuffledPlayers[2]], bench: [] },
-      ];
+        rounds = [
+            { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[3]], bench: [] },
+            { team1: [shuffledPlayers[0], shuffledPlayers[2]], team2: [shuffledPlayers[1], shuffledPlayers[3]], bench: [] },
+            { team1: [shuffledPlayers[0], shuffledPlayers[3]], team2: [shuffledPlayers[1], shuffledPlayers[2]], bench: [] },
+        ];
     } else if (numPlayers === 5) {
-      rounds = [
-        { team1: [shuffledPlayers[1], shuffledPlayers[4]], team2: [shuffledPlayers[0], shuffledPlayers[2]], bench: [shuffledPlayers[3]] },
-        { team1: [shuffledPlayers[1], shuffledPlayers[2]], team2: [shuffledPlayers[0], shuffledPlayers[3]], bench: [shuffledPlayers[4]] },
-        { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[3], shuffledPlayers[4]], bench: [shuffledPlayers[2]] },
-        { team1: [shuffledPlayers[1], shuffledPlayers[3]], team2: [shuffledPlayers[4], shuffledPlayers[2]], bench: [shuffledPlayers[0]] },
-        { team1: [shuffledPlayers[0], shuffledPlayers[4]], team2: [shuffledPlayers[3], shuffledPlayers[2]], bench: [shuffledPlayers[1]] },
-      ];
+        rounds = [
+            { team1: [shuffledPlayers[1], shuffledPlayers[4]], team2: [shuffledPlayers[0], shuffledPlayers[2]], bench: [shuffledPlayers[3]] },
+            { team1: [shuffledPlayers[1], shuffledPlayers[2]], team2: [shuffledPlayers[0], shuffledPlayers[3]], bench: [shuffledPlayers[4]] },
+            { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[3], shuffledPlayers[4]], bench: [shuffledPlayers[2]] },
+            { team1: [shuffledPlayers[1], shuffledPlayers[3]], team2: [shuffledPlayers[4], shuffledPlayers[2]], bench: [shuffledPlayers[0]] },
+            { team1: [shuffledPlayers[0], shuffledPlayers[4]], team2: [shuffledPlayers[3], shuffledPlayers[2]], bench: [shuffledPlayers[1]] },
+        ];
     } else if (numPlayers === 6) {
-      rounds = [
-        { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[3]], bench: [shuffledPlayers[4], shuffledPlayers[5]] },
-        { team1: [shuffledPlayers[4], shuffledPlayers[5]], team2: [shuffledPlayers[3], shuffledPlayers[1]], bench: [shuffledPlayers[0], shuffledPlayers[2]] },
-        { team1: [shuffledPlayers[5], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[0]], bench: [shuffledPlayers[4], shuffledPlayers[3]] },
-        { team1: [shuffledPlayers[4], shuffledPlayers[3]], team2: [shuffledPlayers[0], shuffledPlayers[5]], bench: [shuffledPlayers[2], shuffledPlayers[1]] },
-        { team1: [shuffledPlayers[0], shuffledPlayers[4]], team2: [shuffledPlayers[2], shuffledPlayers[1]], bench: [shuffledPlayers[5], shuffledPlayers[3]] },
-        { team1: [shuffledPlayers[5], shuffledPlayers[3]], team2: [shuffledPlayers[4], shuffledPlayers[1]], bench: [shuffledPlayers[0], shuffledPlayers[2]] },
-        { team1: [shuffledPlayers[2], shuffledPlayers[4]], team2: [shuffledPlayers[0], shuffledPlayers[3]], bench: [shuffledPlayers[5], shuffledPlayers[1]] },
-        { team1: [shuffledPlayers[1], shuffledPlayers[2]], team2: [shuffledPlayers[0], shuffledPlayers[5]], bench: [shuffledPlayers[3], shuffledPlayers[4]] },
-        { team1: [shuffledPlayers[2], shuffledPlayers[5]], team2: [shuffledPlayers[3], shuffledPlayers[4]], bench: [shuffledPlayers[0], shuffledPlayers[1]] },
-      ];
+        rounds = [
+            { team1: [shuffledPlayers[0], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[3]], bench: [shuffledPlayers[4], shuffledPlayers[5]] },
+            { team1: [shuffledPlayers[4], shuffledPlayers[5]], team2: [shuffledPlayers[3], shuffledPlayers[1]], bench: [shuffledPlayers[0], shuffledPlayers[2]] },
+            { team1: [shuffledPlayers[5], shuffledPlayers[1]], team2: [shuffledPlayers[2], shuffledPlayers[0]], bench: [shuffledPlayers[4], shuffledPlayers[3]] },
+            { team1: [shuffledPlayers[4], shuffledPlayers[3]], team2: [shuffledPlayers[0], shuffledPlayers[5]], bench: [shuffledPlayers[2], shuffledPlayers[1]] },
+            { team1: [shuffledPlayers[0], shuffledPlayers[4]], team2: [shuffledPlayers[2], shuffledPlayers[1]], bench: [shuffledPlayers[5], shuffledPlayers[3]] },
+            { team1: [shuffledPlayers[5], shuffledPlayers[3]], team2: [shuffledPlayers[4], shuffledPlayers[1]], bench: [shuffledPlayers[0], shuffledPlayers[2]] },
+            { team1: [shuffledPlayers[2], shuffledPlayers[4]], team2: [shuffledPlayers[0], shuffledPlayers[3]], bench: [shuffledPlayers[5], shuffledPlayers[1]] },
+            { team1: [shuffledPlayers[1], shuffledPlayers[2]], team2: [shuffledPlayers[0], shuffledPlayers[5]], bench: [shuffledPlayers[3], shuffledPlayers[4]] },
+            { team1: [shuffledPlayers[2], shuffledPlayers[5]], team2: [shuffledPlayers[3], shuffledPlayers[4]], bench: [shuffledPlayers[0], shuffledPlayers[1]] },
+        ];
     }
-  
-    console.log("✅ Generated Rounds:", rounds);
 
+    console.log("✅ Generated Rounds:", rounds);
     return rounds;
-}
+};
 
 type Matchup = string[][][];
 
@@ -227,7 +221,7 @@ const buttons = Array.from({ length: 17 }, (_, i) => i); // Create an array from
 
 const Home: React.FC<HomeProps> = ({ data, error }) => {
     const [isClient, setIsClient] = useState(false);
-    const [rounds, setRounds] = useState<string[][][]>([]);
+    const [rounds, setRounds] = useState<Round[]>([]);
     const [currentRound, setCurrentRound] = useState<number>(0);
     const [scores, setScores] = useState<{ [key: number]: [number, number] }>({});
     const [currentRanking, setCurrentRanking] = useState<[string, number][]>([]);
@@ -295,9 +289,9 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                 console.log("🎾 Players used for rounds:", players);
     
                 // Generate fresh rounds using only API data
-                const initialRounds = formatMatchups(generateRounds(players));
-                setRounds(initialRounds);
-                setLocalStorageWithExpiry("rounds", initialRounds, 3600000); // Save with 1-hour expiry
+                const generatedRounds = generateRounds(players, []);
+                setRounds(generatedRounds);
+                setLocalStorageWithExpiry("rounds", generatedRounds, 3600000); // Save with 1-hour expiry
             } else {
                 console.error("❌ Invalid or empty data received:", data);
             }
@@ -311,20 +305,35 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         setCurrentRanking(sortedRanking);
     }, [scores]); // ✅ Fix: Add 'calculatePlayerScores' here
 
+    useEffect(() => {
+        if (rounds.length > 0 && currentRound === rounds.length - 1) {
+            const lastRound = rounds[rounds.length - 1] as Round;
+            
+            if (lastRound?.bench?.length > 0) {
+                console.log("✅ Storing last benched players:", lastRound.bench.map(p => p.name));
+    
+                // Convert the bench array to JSON-safe format before storing
+                setLocalStorageWithExpiry("lastBenched", JSON.stringify(lastRound.bench), 3600000); 
+            } else {
+                console.log("⚠️ No players benched in the last round. Clearing storage.");
+                localStorage.removeItem("lastBenched"); // Ensure old data is cleared if no one is benched
+            }
+        }
+    }, [currentRound, rounds]); // ✅ Re-run only when currentRound or rounds change
+   
     // 🔹 Update scores and persist to `localStorage` with 1-hour expiry
     const updateScores = (score: number) => {
         setScores((prevScores) => {
             const newScores: { [key: number]: [number, number] } = {
                 ...prevScores,
-                [currentRound]: [score, 16 - score], // ✅ Maintain `[number, number]` structure
+                [currentRound]: [score, 16 - score], // ✅ Ensure correct structure
             };
-
-            // Only update localStorage if scores have changed
-            const existingScores = getLocalStorageWithExpiry("scores");
-            if (!existingScores || JSON.stringify(existingScores) !== JSON.stringify(newScores)) {
-                setLocalStorageWithExpiry("scores", newScores, 3600000); // 1-hour expiry
-            }
-
+    
+            console.log("✅ Updated Scores:", newScores);
+    
+            // ✅ Save to localStorage with expiration
+            setLocalStorageWithExpiry("scores", newScores, 3600000); // 1-hour expiry
+    
             return newScores;
         });
     };
@@ -348,53 +357,44 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         return <div>Loading...</div>;
     }
 
-    const round = rounds.length > 0 && rounds[currentRound] ? rounds[currentRound] : [];
+    const round: Round | null = rounds.length > 0 && currentRound < rounds.length ? rounds[currentRound] : null;
     console.log("Current Round Data:", round);
 
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
     
-        // ✅ Ensure `data` is an array before using `.forEach()`
         if (!Array.isArray(data)) {
             console.error("❌ Expected `data` to be an array but got:", data);
-            return playerScores; // Return an empty object if `data` is invalid
+            return playerScores; 
         }
     
-        // Initialize scores for all players
+        // ✅ Initialize scores for all players
         data.forEach((item) => {
             playerScores[`${item.fornavn} ${item.etternavn[0]}.`] = 0;
         });
     
-        // Iterate over each round and accumulate scores
+        // ✅ Iterate through each round and accumulate scores
         rounds.forEach((round, roundIndex) => {
-            if (scores[roundIndex] && round[1] && round[2]) {
+            if (scores[roundIndex]) {
                 const [score1, score2] = scores[roundIndex];
     
-                if (round[1]?.[0] && round[2]?.[0]) {
-                    const team1 = [round[1][0], round[2][0]];
-                    const team2 = [round[1][1], round[2][1]];
+                round.team1.forEach((player) => {
+                    if (playerScores.hasOwnProperty(player.name)) {
+                        playerScores[player.name] += score1;
+                    }
+                });
     
-                    team1.forEach((player) => {
-                        if (playerScores.hasOwnProperty(player)) {
-                            playerScores[player] += score1;
-                        }
-                    });
-    
-                    team2.forEach((player) => {
-                        if (playerScores.hasOwnProperty(player)) {
-                            playerScores[player] += score2;
-                        }
-                    });
-                }
+                round.team2.forEach((player) => {
+                    if (playerScores.hasOwnProperty(player.name)) {
+                        playerScores[player.name] += score2;
+                    }
+                });
             }
         });
     
+        console.log("🏆 Final Player Scores:", playerScores);
         return playerScores;
     }
-
-    //function areRoundsEqual(rounds1: any[][][], rounds2: any[][][]) {
-    //    return JSON.stringify(rounds1) === JSON.stringify(rounds2);
-    //}
 
     function areRoundsEqual(rounds1: any[][][], rounds2: any[][][]): boolean {
         if (rounds1.length !== rounds2.length) return false;
@@ -408,35 +408,23 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         );
     }
 
-    function generateUniqueRounds(data: any[], previousRounds: any[][][]) {
-        let newRounds: any[][][] = [];
-        let attempts = 0;
-    
-        do {
-            newRounds = formatMatchups(generateRounds(data)); // Generates with shuffled players and formats them
-            attempts++;
-        } while (areRoundsEqual(newRounds, previousRounds) && attempts < 10);  // Retry if same
-    
-        return newRounds;
-    }
-
     const playerScores = calculatePlayerScores();
-    const currentPlayerScores = calculatePlayerScores();
-
-    // Sort players by score in descending order
     const sortedPlayers = Object.entries(playerScores)
-        .sort((a, b) => b[1] - a[1]);
-
+    .sort((a, b) => b[1] - a[1]); // ✅ Sort by score descending
+    
     function startNewGame() {
         if (!rounds.length) return;
     
         // ✅ Extract last benched players from the last round
         const lastRound = rounds.length > 0 ? rounds[rounds.length - 1] : null;
-        const lastBenchedPlayers = lastRound && 'bench' in lastRound ? [...((lastRound as unknown) as Round).bench] : [];
-        
+        console.log("🔍 Last Round Data:", lastRound);
+        const lastBenchedPlayers: Player[] = lastRound && "bench" in lastRound ? [...(lastRound as any).bench] : [];
+        console.log("🔍 Extracted last benched players:", lastBenchedPlayers);
+
         console.log("🔄 Starting new game... Last benched:", lastBenchedPlayers.map(p => p.name));
     
-        localStorage.setItem("lastBenched", JSON.stringify(lastBenchedPlayers)); // ✅ Persist bench players
+        // ✅ Persist bench players to localStorage
+        setLocalStorageWithExpiry("lastBenched", lastBenchedPlayers, 3600000);
     
         if (!data || data.length === 0) return;
     
@@ -446,12 +434,16 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         }));
     
         // ✅ Load last benched players from storage
-        const storedBenched = JSON.parse(localStorage.getItem("lastBenched") || "[]");
+        const storedBenched = getLocalStorageWithExpiry("lastBenched") || [];
+        console.log("✅ Loaded last benched from storage:", storedBenched);
+    
+        console.log("✅ Loaded last benched from storage:", storedBenched.map(p => p.name));
     
         // ✅ Generate rounds with stored bench players
         const newRounds = generateRounds(players, storedBenched);
     
-        setRounds(formatMatchups(newRounds));
+        const newFormattedRounds = generateRounds(players, storedBenched); // Generate correct Round[]
+        setRounds(newFormattedRounds); // Directly use Round[] format
         setCurrentRound(0);
         setScores({});
         setCurrentRanking([]);
@@ -551,21 +543,30 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                     </div>
                     <div className="flex justify-center">
                         <div className="bg-gray-100 rounded-md mb-4 max-w-3xl md:max-w-4xl flex items-center justify-between p-5 w-full">
+                            {/* Team 1 */}
                             <div className="flex-col">
-                                {Array.isArray(round) && round.slice(1).map((match, matchIndex) => (
-                                    <div key={matchIndex}>{match[0]}</div>
+                                {round?.team1?.map((player, index) => (
+                                    <div key={index}>{player.name}</div>
                                 ))}
                             </div>
+                            
+                            {/* Score Display */}
                             <div className="font-bold text-3xl">
-                                {scores[currentRound] ? scores[currentRound][0] : 0} {/* Correct way to access Score 1 for the current round */}
+                                {scores[currentRound] ? scores[currentRound][0] : 0}
                             </div>
-                            {Array.isArray(round) && round.length > 1 && <div>vs</div>}
+
+                            {/* VS Label */}
+                            <div>vs</div>
+
+                            {/* Score Display */}
                             <div className="font-bold text-3xl">
-                                {scores[currentRound] ? scores[currentRound][1] : 0} {/* Correct way to access Score 2 for the current round */}
+                                {scores[currentRound] ? scores[currentRound][1] : 0}
                             </div>
-                            <div className="flex flex-col">
-                                {Array.isArray(round) && round.slice(1).map((match, matchIndex) => (
-                                    <div key={matchIndex}>{match[1]}</div>
+
+                            {/* Team 2 */}
+                            <div className="flex-col">
+                                {round?.team2?.map((player, index) => (
+                                    <div key={index}>{player.name}</div>
                                 ))}
                             </div>
                         </div>
@@ -584,7 +585,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                 ))}
             </div>
             {currentRound === rounds.length - 1 && scores[currentRound] && (
-                <div className="mt-10">
+                    <div className="mt-10">
                     <h2 className="text-2xl font-bold text-center">High Scores</h2>
                     <div className="flex justify-center">
                         <table className="table-auto mt-4">
@@ -596,10 +597,10 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentRanking.map(([player, score], index) => (
+                                {sortedPlayers.map(([player, score], index) => (
                                     <tr key={player} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
                                         <td className="border px-4 py-2">
-                                            {index + 1} {index === 0 && "🏆"} {/* ✅ Trophy for 1st place */}
+                                            {index + 1} {index === 0 && "🏆"} 
                                         </td>
                                         <td className="border px-4 py-2">{player}</td>
                                         <td className="border px-4 py-2">{score}</td>
