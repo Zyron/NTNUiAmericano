@@ -434,7 +434,7 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
         }));
     
         // ✅ Load last benched players from storage
-        const storedBenched = getLocalStorageWithExpiry("lastBenched") || [];
+        const storedBenched: Player[] = getLocalStorageWithExpiry("lastBenched") || [];
         console.log("✅ Loaded last benched from storage:", storedBenched.map((p: Player) => p.name));
     
         // ✅ Generate rounds with stored bench players
