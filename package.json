@@ -25,6 +25,7 @@
     "typescript": "5.0.4"
   },
   "devDependencies": {
+    "@types/luxon": "^3.4.2",
     "@types/mysql": "^2.15.21"
   }
 }
