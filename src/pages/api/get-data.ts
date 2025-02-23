@@ -1,69 +1,115 @@
 // pages/api/get-data.ts
 import { NextApiRequest, NextApiResponse } from "next";
 import mysql from "mysql";
+import { DateTime } from "luxon";
 
-// console.log("process.env.DATABASE_PASSWORD");
-// console.log(process.env.DATABASE_PASSWORD);
-
+// Create a MySQL connection
 const connection = mysql.createConnection({
   host: "ntnuitennis.no",
-  user: process.env.DATABASE_USERNAME || "", // previous member of board
-  password: process.env.DATABASE_PASSWORD || "", // power (a not o) + number 
+  user: process.env.DATABASE_USERNAME || "",
+  password: process.env.DATABASE_PASSWORD || "",
   database: "tennisgr_web2",
 });
 
-connection.connect();
-
-function shuffleArray(array: any[]): any[] {
-  for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+connection.connect((err) => {
+  if (err) {
+    console.error("❌ MySQL connection error:", err);
+  } else {
+    console.log("✅ MySQL connected.");
   }
-  return array;
-}
+});
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-
   let dummy = [
-    {"medlemsid":12679,"fornavn":"Lars","etternavn":"Føleide","mobil":"+47 99554455"},
-    {"medlemsid":12187,"fornavn":"Anh","etternavn":"Nguyen","mobil":"97104835"},
-    {"medlemsid":12375,"fornavn":"Bob","etternavn":"Dylan","mobil":"99745767"},
-    {"medlemsid":15668,"fornavn":"Alice","etternavn":"Wonderland","mobil":"46894556"}
+    { "medlemsid": 12679, "fornavn": "Lars", "etternavn": "Føleide", "mobil": "+47 99554455" },
+    { "medlemsid": 12187, "fornavn": "Anh", "etternavn": "Nguyen", "mobil": "97104835" },
+    { "medlemsid": 12375, "fornavn": "Bob", "etternavn": "Dylan", "mobil": "99745767" },
+    { "medlemsid": 15668, "fornavn": "Alice", "etternavn": "Wonderland", "mobil": "46894556" }
   ];
 
   try {
-    const timeid = req.query.timeid;
+    const { timeid, expiredonehour, spilletid } = req.query;
 
     if (!timeid) {
-      res.status(400).json({ error: "timeid not provided in the query" });
-      return;
+      return res.status(400).json({ error: "timeid is required." });
     }
 
+    console.log("📩 Received params:", { timeid, expiredonehour, spilletid });
+
+    // Ensure `timeid` is an integer
+    const numericTimeId = parseInt(timeid as string, 10);
+    if (isNaN(numericTimeId)) {
+      return res.status(400).json({ error: "Invalid timeid format. Must be an integer." });
+    }
+
+    // Keep expiredOneHour as a string but ensure it's either "true" or "false"
+    const isExpired = expiredonehour === "true" ? "true" : "false";
+
+    // Validate and format `spilletid` correctly for MySQL
+    let formattedSpilletid: string | null = null;
+
+    if (spilletid) {
+      console.log("📅 Received spilletid:", spilletid);
+
+      const match = /^\d{8}T\d{2}:\d{2}:\d{2}$/.test(spilletid as string);
+      if (!match) {
+        return res.status(400).json({ error: "Invalid spilletid format. Expected YYYYMMDDTHH:MM:SS" });
+      }
+
+      // Convert to MySQL datetime format with correct timezone (Europe/Oslo)
+      const eventTime = DateTime.fromFormat(spilletid as string, "yyyyMMdd'T'HH:mm:ss", { zone: "Europe/Oslo" });
+
+      if (!eventTime.isValid) {
+        return res.status(400).json({ error: "Failed to parse spilletid." });
+      }
+
+      formattedSpilletid = eventTime.toFormat("yyyy-MM-dd HH:mm:ss"); // MySQL datetime format
+      console.log("✅ Parsed spilletid (MySQL format, fixed timezone):", formattedSpilletid);
+    }
+
+    // Prepare SQL query based on expiredOneHour flag
+    let query = `
+      SELECT b.medlemsid, b.fornavn, b.etternavn, b.mobil 
+      FROM vikarer a
+      INNER JOIN medlemmer b ON a.medlemsid = b.medlemsid
+      WHERE a.timeid = ?
+      ORDER BY a.bekreftelsestidspunkt`;
+
+    let params: any[] = [numericTimeId];
+
+    if (isExpired === "true" && formattedSpilletid) {
+      query = `
+        SELECT b.medlemsid, b.fornavn, b.etternavn, b.mobil 
+        FROM siste_treninger a
+        INNER JOIN medlemmer b ON a.medlemsid = b.medlemsid
+        WHERE a.timeid = ? AND a.treningstidspunkt = ?`;
+      params = [numericTimeId, formattedSpilletid];
+    }
+
+    console.log("📝 Executing SQL:", query);
+    console.log("📊 With params:", params);
 
     const results = await new Promise<any[]>((resolve, reject) => {
-      connection.query('SELECT b.medlemsid, b.fornavn, b.etternavn, b.mobil FROM vikarer a, medlemmer b WHERE a.medlemsid = b.medlemsid AND a.timeid= ? ORDER BY a.bekreftelsestidspunkt', [timeid], (error, results, fields) => {
+      connection.query(query, params, (error, results) => {
         if (error) {
-          console.log(error);
-          resolve(dummy); // resolve with dummy data on error
+          console.error("❌ Database error:", error);
+          resolve(dummy); // Return dummy data on error
         } else {
-          console.log(results);
           resolve(results);
         }
       });
     });
 
-    // Check the length of the results
-    if (results.length === 4 || results.length === 5 || results.length === 6) {
-      console.log("test3");
-      res.status(200).json(results);
+    // Check player count, return results or dummy data
+    if (results.length >= 4 && results.length <= 6) {
+      return res.status(200).json(results);
     } else {
-      console.log("test4");
-      res.status(200).json(dummy);
+      return res.status(200).json(dummy);
     }
-    
+
   } catch (error) {
-    console.log("test5");
-    res.status(500).json(dummy); // Return dummy data when an unexpected error occurs
+    console.error("⚠️ Unexpected error:", error);
+    return res.status(500).json(dummy); // Return dummy data on server error
   }
 };
 

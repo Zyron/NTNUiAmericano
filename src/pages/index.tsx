@@ -36,13 +36,19 @@ const rounds: Round[] = [
 const sendData = async (
     timeid: number,
     host: string,
-    expiredonehour: string | null
+    expiredonehour: string | null,
+    spilletid: string | null // Added spilletid support
 ): Promise<{ data: Item[] | null; error: string | null }> => {
     try {
         const apiUrl = new URL(`http://${host}/api/get-data`);
         apiUrl.searchParams.append("timeid", timeid.toString());
-        if (expiredonehour) {
-            apiUrl.searchParams.append("expiredonehour", expiredonehour);
+        
+        if (expiredonehour !== null) {
+            apiUrl.searchParams.append("expiredonehour", expiredonehour); // Keep as string
+        }
+
+        if (spilletid !== null) {
+            apiUrl.searchParams.append("spilletid", spilletid); // Add support for spilletid
         }
 
         const res = await fetch(apiUrl.toString());
@@ -64,16 +70,17 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
     const host = context.req.headers.host || "localhost:3000";
 
     // Retrieve query parameters
-    const { timeid, expiredonehour } = context.query;
+    const { timeid, expiredonehour, spilletid } = context.query;
 
     // Parse `timeid` as an integer with a default value of 999 if missing
     const timeidToSend = timeid ? parseInt(timeid as string, 10) : 999;
     
-    // Ensure `expiredonehour` is a string ("0" or "1")
+    // Ensure `expiredonehour` and `spilletid` are strings
     const expiredOneHourParam = expiredonehour ? expiredonehour.toString() : null;
+    const spilletidParam = spilletid ? spilletid.toString() : null;
 
-    // Fetch data using both `timeid` and `expiredonehour`
-    const { data, error } = await sendData(timeidToSend, host, expiredOneHourParam);
+    // Fetch data using `timeid`, `expiredonehour`, and `spilletid`
+    const { data, error } = await sendData(timeidToSend, host, expiredOneHourParam, spilletidParam);
 
     return {
         props: {
@@ -274,20 +281,28 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     // 🔹 Generate rounds when `data` changes
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const savedRounds = getLocalStorageWithExpiry("rounds");
-            if (savedRounds) {
-                setRounds(savedRounds);
-            } else if (data) {
+            console.log("✅ Fetched players from API:", data); // Debug log
+    
+            // Remove any outdated rounds immediately
+            localStorage.removeItem("rounds");
+    
+            if (data && Array.isArray(data) && data.length > 0) {
                 const players: Player[] = data.map(item => ({
                     id: item.medlemsid,
                     name: `${item.fornavn} ${item.etternavn[0]}.`
                 }));
+    
+                console.log("🎾 Players used for rounds:", players);
+    
+                // Generate fresh rounds using only API data
                 const initialRounds = formatMatchups(generateRounds(players));
                 setRounds(initialRounds);
                 setLocalStorageWithExpiry("rounds", initialRounds, 3600000); // Save with 1-hour expiry
+            } else {
+                console.error("❌ Invalid or empty data received:", data);
             }
         }
-    }, [data]); // ✅ Only regenerate rounds if no saved rounds exist
+    }, [data]); // ✅ Will re-run if API response changes
 
     // 🔹 Calculate rankings when `scores` change
     useEffect(() => {
@@ -339,8 +354,14 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
     function calculatePlayerScores() {
         const playerScores: { [key: string]: number } = {};
     
+        // ✅ Ensure `data` is an array before using `.forEach()`
+        if (!Array.isArray(data)) {
+            console.error("❌ Expected `data` to be an array but got:", data);
+            return playerScores; // Return an empty object if `data` is invalid
+        }
+    
         // Initialize scores for all players
-        data?.forEach((item) => {
+        data.forEach((item) => {
             playerScores[`${item.fornavn} ${item.etternavn[0]}.`] = 0;
         });
     
@@ -349,25 +370,19 @@ const Home: React.FC<HomeProps> = ({ data, error }) => {
             if (scores[roundIndex] && round[1] && round[2]) {
                 const [score1, score2] = scores[roundIndex];
     
-                // Ensure round[1] and round[2] are defined and have the expected structure
-                if (round[1] && round[1][0] && round[2] && round[2][0]) {
-                    // Team 1: Player 0 from round[1] and Player 0 from round[2]
+                if (round[1]?.[0] && round[2]?.[0]) {
                     const team1 = [round[1][0], round[2][0]];
-    
-                    // Team 2: Player 1 from round[1] and Player 1 from round[2]
                     const team2 = [round[1][1], round[2][1]];
     
-                    // Assign scores to players in team 1
                     team1.forEach((player) => {
                         if (playerScores.hasOwnProperty(player)) {
-                            playerScores[player] += score1; // Team 1 gets score1
+                            playerScores[player] += score1;
                         }
                     });
     
-                    // Assign scores to players in team 2
                     team2.forEach((player) => {
                         if (playerScores.hasOwnProperty(player)) {
-                            playerScores[player] += score2; // Team 2 gets score2
+                            playerScores[player] += score2;
                         }
                     });
                 }
