@@ -97,28 +97,34 @@ function shuffleArray(array: any[]) {
         .map(({ value }) => value);
 }
 
-const generateRounds = (players: Player[], lastBenched: Player[] = []) => {
+const generateRounds = (players: Player[], lastBenched: Player[] = []): Round[] => {
+    // 1. Copy the full player list
     let shuffledPlayers = [...players];
-
-    // ✅ Ensure previously benched players play in the first round
-    if (Array.isArray(lastBenched) && lastBenched.length > 0) {
-        console.log("🔄 Carrying over benched players:", lastBenched);
-        
-        // Remove benched players from the main list
-        shuffledPlayers = shuffledPlayers.filter(p => !lastBenched.some(b => b.id === p.id));
-
-        // Add them back at the front to ensure they play
-        shuffledPlayers = [...lastBenched, ...shuffledPlayers];
+  
+    if (lastBenched.length > 0) {
+      console.log("🔄 Carrying over benched players:", lastBenched);
+  
+      // 2. Remove them from the normal list
+      shuffledPlayers = shuffledPlayers.filter(
+        p => !lastBenched.some(b => b.id === p.id)
+      );
+  
+      // 3. Force them to the front so they definitely play in round one
+      //    (For example, if you only want to force 2 bench players to front)
+      const mustPlayPlayers = lastBenched.slice(0, 2);
+      const remainingPlayers = shuffleArray(shuffledPlayers); 
+      shuffledPlayers = [...mustPlayPlayers, ...remainingPlayers];
+      
+      console.log("✅ Forced previously benched players into Round 1:", 
+        shuffledPlayers.map(p => p.name));
+    } else {
+      // If no one was benched, just shuffle the entire list
+      shuffledPlayers = shuffleArray(shuffledPlayers);
     }
-
-    // ✅ Shuffle players before assigning them to rounds
-    shuffledPlayers = shuffledPlayers
-        .map(value => ({ value, sort: Math.random() })) // Assign a random sort order
-        .sort((a, b) => a.sort - b.sort) // Sort based on the random value
-        .map(({ value }) => value);
-
+  
     console.log("🔀 New Player Order:", shuffledPlayers.map(p => p.name));
-
+  
+    // 4. Build the actual rounds from the final `shuffledPlayers` array
     let rounds: Round[] = [];
     const numPlayers = shuffledPlayers.length;
 
