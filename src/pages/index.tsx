@@ -100,9 +100,15 @@ function shuffleArray(array: any[]) {
 const generateRounds = (players: Player[], lastBenched: Player[] = []) => {
     let shuffledPlayers = [...players];
 
+    // ✅ Ensure previously benched players play in the first round
     if (Array.isArray(lastBenched) && lastBenched.length > 0) {
         console.log("🔄 Carrying over benched players:", lastBenched);
-        shuffledPlayers = shuffledPlayers.filter(p => !lastBenched.includes(p));
+        
+        // Remove benched players from the main list
+        shuffledPlayers = shuffledPlayers.filter(p => !lastBenched.some(b => b.id === p.id));
+
+        // Add them back at the front to ensure they play
+        shuffledPlayers = [...lastBenched, ...shuffledPlayers];
     }
 
     // ✅ Shuffle players before assigning them to rounds
