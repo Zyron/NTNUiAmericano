@@ -102,26 +102,51 @@ const generateRounds = (players: Player[], lastBenched: Player[] = []): Round[] 
     let shuffledPlayers = [...players];
   
     if (lastBenched.length > 0) {
-      console.log("🔄 Carrying over benched players:", lastBenched);
-  
-      // 2. Remove them from the normal list
-      shuffledPlayers = shuffledPlayers.filter(
-        p => !lastBenched.some(b => b.id === p.id)
-      );
-  
-      // 3. Force them to the front so they definitely play in round one
-      //    (For example, if you only want to force 2 bench players to front)
-      const mustPlayPlayers = lastBenched.slice(0, 2);
-      const remainingPlayers = shuffleArray(shuffledPlayers); 
-      shuffledPlayers = [...mustPlayPlayers, ...remainingPlayers];
-      
-      console.log("✅ Forced previously benched players into Round 1:", 
-        shuffledPlayers.map(p => p.name));
+        console.log("🔄 Carrying over benched players:", lastBenched);
+
+        // 1️⃣ Remove benched players from the main list
+        shuffledPlayers = shuffledPlayers.filter(
+            p => !lastBenched.some(b => b.id === p.id)
+        );
+
+        // 2️⃣ Select random positions (either 1 or 2 players)
+        const numBenched = lastBenched.length;
+        let availablePositions = [0, 1, 2]; // Only pick positions 1, 2, or 3
+        let assignedPositions = [];
+
+        for (let i = 0; i < numBenched; i++) {
+            const randomIndex = Math.floor(Math.random() * availablePositions.length);
+            assignedPositions.push(availablePositions[randomIndex]);
+            availablePositions.splice(randomIndex, 1);
+        }
+
+        console.log("🎲 Assigned positions for benched players:", assignedPositions);
+
+        // 3️⃣ Create a new player array where benched players go into their positions
+        let newPlayerOrder: Player[] = new Array(players.length);
+        let remainingPlayers = shuffleArray(shuffledPlayers);
+
+        // Place benched players into their assigned positions
+        assignedPositions.forEach((pos, index) => {
+            newPlayerOrder[pos] = lastBenched[index];
+        });
+
+        // Fill the rest with shuffled remaining players
+        let fillIndex = 0;
+        for (let i = 0; i < newPlayerOrder.length; i++) {
+            if (!newPlayerOrder[i]) {
+                newPlayerOrder[i] = remainingPlayers[fillIndex++];
+            }
+        }
+
+        shuffledPlayers = newPlayerOrder;
+
+        console.log("✅ Final player order after inserting benched players:", 
+            shuffledPlayers.map(p => p.name));
     } else {
-      // If no one was benched, just shuffle the entire list
-      shuffledPlayers = shuffleArray(shuffledPlayers);
+        shuffledPlayers = shuffleArray(shuffledPlayers);
     }
-  
+
     console.log("🔀 New Player Order:", shuffledPlayers.map(p => p.name));
   
     // 4. Build the actual rounds from the final `shuffledPlayers` array
